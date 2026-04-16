@@ -17,6 +17,7 @@ public class Task {
     private LocalDateTime completedAt;
     private LocalDate deadline;
     private final List<Subtask> subtasks;
+    private Long userId;
 
     public Task(String name, String description, TaskPriority priority,
                 TaskCategory category, LocalDate deadline) {
@@ -153,6 +154,14 @@ public class Task {
 
     public List<Subtask> getSubtasks() {
         return subtasks;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     @Override
