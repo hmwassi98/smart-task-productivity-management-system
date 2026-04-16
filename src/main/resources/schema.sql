@@ -1,0 +1,52 @@
+CREATE DATABASE IF NOT EXISTS task_manager;
+USE task_manager;
+
+DROP TABLE IF EXISTS pomodoro_sessions;
+DROP TABLE IF EXISTS subtasks;
+DROP TABLE IF EXISTS tasks;
+DROP TABLE IF EXISTS users;
+
+CREATE TABLE users (
+    user_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(100) NOT NULL,
+    email VARCHAR(255) UNIQUE,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE tasks (
+    task_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    status ENUM('TODO', 'IN_PROGRESS', 'COMPLETED', 'BACKLOG') NOT NULL DEFAULT 'TODO',
+    priority ENUM('LOW', 'MEDIUM', 'HIGH') NOT NULL DEFAULT 'MEDIUM',
+    category ENUM('STUDY', 'WORK', 'RECREATION', 'OTHERS') DEFAULT 'OTHERS',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    completed_at DATETIME,
+    deadline DATE,
+
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL
+);
+
+CREATE TABLE subtasks (
+    subtask_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    task_id BIGINT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    completed BOOLEAN NOT NULL DEFAULT FALSE,
+
+    FOREIGN KEY (task_id) REFERENCES tasks(task_id) ON DELETE CASCADE
+);
+
+CREATE TABLE pomodoro_sessions (
+    session_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    task_id BIGINT NOT NULL,
+    type ENUM('FOCUS', 'SHORT_BREAK', 'LONG_BREAK', 'CUSTOM') NOT NULL,
+    start_time DATETIME NOT NULL,
+    end_time DATETIME,
+    planned_minutes INT NOT NULL,
+    completed BOOLEAN NOT NULL DEFAULT FALSE,
+
+    FOREIGN KEY (task_id) REFERENCES tasks(task_id) ON DELETE CASCADE
+);
