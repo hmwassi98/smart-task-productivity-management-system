@@ -33,6 +33,7 @@ public class TaskRepositoryTest {
             System.out.println(savedTask);
             System.out.println("Generated ID: " + savedTask.getTaskId());
 
+            //findById() test
             System.out.println("\nFinding task by ID...");
             taskRepository.findById(savedTask.getTaskId())
                     .ifPresentOrElse(
@@ -42,6 +43,28 @@ public class TaskRepositoryTest {
                             },
                             () -> System.out.println("Task not found.")
                     );
+
+            //findAll() test
+            System.out.println("\nAll tasks:");
+            taskRepository.findAll().forEach(System.out::println);
+
+            //update() test
+            savedTask.setName("Updated Task Name");
+            taskRepository.update(savedTask);
+
+            System.out.println("\nAfter update:");
+            System.out.println(taskRepository.findById(savedTask.getTaskId()).orElse(null));
+
+            //existsById() test
+            System.out.println("\nExists:");
+            System.out.println(taskRepository.existsById(savedTask.getTaskId()));
+
+            //deleteById() test
+            boolean deleted = taskRepository.deleteById(savedTask.getTaskId());
+
+            System.out.println("\nDeleted: " + deleted);
+            System.out.println("Exists after delete: " +
+                    taskRepository.existsById(savedTask.getTaskId()));
 
         } catch (Exception e) {
             e.printStackTrace();
