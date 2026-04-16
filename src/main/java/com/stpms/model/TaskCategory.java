@@ -2,8 +2,17 @@ package com.stpms.model;
 
 public enum TaskCategory {
 
-    STUDY,
-    WORK,
-    RECREATION;
+    STUDY("Study"),
+    WORK("Work"),
+    RECREATION("Recreation");
 
+    private final String displayName;
+
+    TaskCategory(String displayName) {
+        this.displayName = displayName;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
 }
