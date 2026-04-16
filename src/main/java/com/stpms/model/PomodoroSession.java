@@ -9,24 +9,27 @@ public class PomodoroSession {
     private Long taskId;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
-    private int durationMinutes;
+    private int plannedMinutes;
+    private Integer actualMinutes;
     private boolean completed;
     private PomodoroType type;
 
-    public PomodoroSession(Long taskId, PomodoroType type) {
-        this.taskId = taskId;
+    public PomodoroSession(Long taskId, PomodoroType type, int plannedMinutes) {
+        this.taskId = Objects.requireNonNull(taskId, "Task ID cannot be null");
         this.type = Objects.requireNonNull(type, "Pomodoro type cannot be null");
+        setPlannedMinutes(plannedMinutes);
         this.completed = false;
     }
 
     public PomodoroSession(Long sessionId, Long taskId, LocalDateTime startTime,
-                           LocalDateTime endTime, int durationMinutes,
-                           boolean completed, PomodoroType type) {
+                           LocalDateTime endTime, int plannedMinutes,
+                           Integer actualMinutes, boolean completed, PomodoroType type) {
         this.sessionId = sessionId;
-        this.taskId = taskId;
+        this.taskId = Objects.requireNonNull(taskId, "Task ID cannot be null");
         this.startTime = startTime;
         this.endTime = endTime;
-        this.durationMinutes = durationMinutes;
+        setPlannedMinutes(plannedMinutes);
+        setActualMinutes(actualMinutes);
         this.completed = completed;
         this.type = Objects.requireNonNull(type, "Pomodoro type cannot be null");
     }
@@ -44,7 +47,7 @@ public class PomodoroSession {
 
         if (endTime == null) {
             endTime = LocalDateTime.now();
-            durationMinutes = (int) Duration.between(startTime, endTime).toMinutes();
+            actualMinutes = (int) Duration.between(startTime, endTime).toMinutes();
             this.completed = completed;
         }
     }
@@ -66,7 +69,7 @@ public class PomodoroSession {
     }
 
     public void setTaskId(Long taskId) {
-        this.taskId = taskId;
+        this.taskId = Objects.requireNonNull(taskId, "Task ID cannot be null");
     }
 
     public LocalDateTime getStartTime() {
@@ -85,15 +88,26 @@ public class PomodoroSession {
         this.endTime = endTime;
     }
 
-    public int getDurationMinutes() {
-        return durationMinutes;
+    public int getPlannedMinutes() {
+        return plannedMinutes;
     }
 
-    public void setDurationMinutes(int durationMinutes) {
-        if (durationMinutes < 0) {
-            throw new IllegalArgumentException("Duration cannot be negative.");
+    public void setPlannedMinutes(int plannedMinutes) {
+        if (plannedMinutes <= 0) {
+            throw new IllegalArgumentException("Planned minutes must be greater than 0.");
         }
-        this.durationMinutes = durationMinutes;
+        this.plannedMinutes = plannedMinutes;
+    }
+
+    public Integer getActualMinutes() {
+        return actualMinutes;
+    }
+
+    public void setActualMinutes(Integer actualMinutes) {
+        if (actualMinutes != null && actualMinutes < 0) {
+            throw new IllegalArgumentException("Actual minutes cannot be negative.");
+        }
+        this.actualMinutes = actualMinutes;
     }
 
     public boolean isCompleted() {
@@ -119,7 +133,8 @@ public class PomodoroSession {
                 ", taskId=" + taskId +
                 ", startTime=" + startTime +
                 ", endTime=" + endTime +
-                ", durationMinutes=" + durationMinutes +
+                ", plannedMinutes=" + plannedMinutes +
+                ", actualMinutes=" + actualMinutes +
                 ", completed=" + completed +
                 ", type=" + type +
                 '}';
