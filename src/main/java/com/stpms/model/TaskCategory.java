@@ -4,7 +4,8 @@ public enum TaskCategory {
 
     STUDY("Study"),
     WORK("Work"),
-    RECREATION("Recreation");
+    RECREATION("Recreation"),
+    OTHERS("Others");
 
     private final String displayName;
 
