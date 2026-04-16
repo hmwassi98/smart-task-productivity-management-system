@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Objects;
 
 public class Task {
-    private Long taskId;
+    private long taskId;
     private String name;
     private String description;
     private TaskStatus status;
@@ -16,35 +16,58 @@ public class Task {
     private LocalDateTime createdAt;
     private LocalDateTime completedAt;
     private LocalDate deadline;
-    private final List<Subtask> subtasks;
+    private List<Subtask> subtasks;
 
-    public Task(String name, String description, TaskPriority priority,
-                TaskCategory category, LocalDate deadline) {
-        this.name = Objects.requireNonNull(name, "Task name cannot be null");
+
+//    private String TaskDueDate;
+//    private String TaskDueTime;
+//    private String TaskDueTimeStart;
+//    private String TaskDueTimeEnd;
+//    private String TaskDueTimeStartEnd;
+//    private String TaskDueTimeEndStart;
+//    private String TaskDueTimeEndEnd;
+
+
+    public Task(String name, String description, TaskPriority priority, LocalDate deadline) {
+        this.name = name;
         this.description = description;
-        this.priority = Objects.requireNonNull(priority, "Task priority cannot be null");
-        this.category = category;
+        this.priority = priority;
         this.deadline = deadline;
 
         this.status = TaskStatus.TODO;
         this.createdAt = LocalDateTime.now();
-        this.completedAt = null;
         this.subtasks = new ArrayList<>();
     }
 
-    public Task(Long taskId, String name, String description, TaskPriority priority,
-                TaskStatus status, TaskCategory category, LocalDate deadline,
-                LocalDateTime createdAt, LocalDateTime completedAt) {
-        this.taskId = taskId;
-        this.name = Objects.requireNonNull(name, "Task name cannot be null");
+    public Task(Long id, String name, String description, TaskPriority priority,
+                TaskStatus status, LocalDate deadline, LocalDateTime createdAt) {
+
+        this.taskId = id;
+        this.name = name;
         this.description = description;
-        this.priority = Objects.requireNonNull(priority, "Task priority cannot be null");
-        this.status = Objects.requireNonNull(status, "Task status cannot be null");
-        this.category = category;
+        this.priority = priority;
+        this.status = status;
         this.deadline = deadline;
-        this.createdAt = (createdAt != null) ? createdAt : LocalDateTime.now();
-        this.completedAt = completedAt;
+        this.createdAt = createdAt;
         this.subtasks = new ArrayList<>();
+    }
+
+    @Override
+    public String toString() {
+        return "Task{" +
+                "id=" + taskId +
+                ", title='" + name + '\'' +
+                ", status=" + status +
+                ", priority=" + priority +
+                '}';
+    }
+
+    public void setStatus(TaskStatus status) {
+        this.status = status;
+    }
+
+    public TaskStatus getStatus() {
+        return status;
     }
 
     public void startTask() {
@@ -54,85 +77,51 @@ public class Task {
     }
 
     public void reopenTask() {
-        if (status == TaskStatus.COMPLETED) {
-            status = TaskStatus.IN_PROGRESS;
-            completedAt = null;
-        }
+        status = TaskStatus.IN_PROGRESS;
+        completedAt = null;
     }
 
     public void markAsCompleted() {
-        if (status != TaskStatus.COMPLETED) {
-            status = TaskStatus.COMPLETED;
-            completedAt = LocalDateTime.now();
+        if (this.status != TaskStatus.COMPLETED) {
+            this.status = TaskStatus.COMPLETED;
+            this.completedAt = LocalDateTime.now();
         }
     }
 
     public boolean isCompleted() {
-        return status == TaskStatus.COMPLETED;
+        return this.status == TaskStatus.COMPLETED;
     }
 
     public boolean isOverdue() {
-        return deadline != null
-                && !isCompleted()
-                && LocalDate.now().isAfter(deadline);
-    }
-
-    public void addSubtask(Subtask subtask) {
-        if (subtask != null) {
-            subtasks.add(subtask);
+        if (deadline == null) {
+            return false;
         }
+
+        return LocalDate.now().isAfter(deadline);
     }
 
-    public void removeSubtask(Subtask subtask) {
-        subtasks.remove(subtask);
+    public List<Subtask> getSubTasks() {
+        return this.subtasks;
     }
 
-    public Long getTaskId() {
+    public long getTaskId() {
         return taskId;
-    }
-
-    public void setTaskId(Long taskId) {
-        this.taskId = taskId;
     }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
-        this.name = Objects.requireNonNull(name, "Task name cannot be null");
-    }
-
     public String getDescription() {
         return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public TaskStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(TaskStatus status) {
-        this.status = Objects.requireNonNull(status, "Task status cannot be null");
     }
 
     public TaskPriority getPriority() {
         return priority;
     }
 
-    public void setPriority(TaskPriority priority) {
-        this.priority = Objects.requireNonNull(priority, "Task priority cannot be null");
-    }
-
-    public TaskCategory getCategory() {
+    public TaskCategory getTaskCategory() {
         return category;
-    }
-
-    public void setCategory(TaskCategory category) {
-        this.category = category;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -147,35 +136,39 @@ public class Task {
         return deadline;
     }
 
-    public void setDeadline(LocalDate deadline) {
-        this.deadline = deadline;
-    }
-
     public List<Subtask> getSubtasks() {
         return subtasks;
     }
 
-    @Override
-    public String toString() {
-        return "Task{" +
-                "taskId=" + taskId +
-                ", name='" + name + '\'' +
-                ", status=" + status +
-                ", priority=" + priority +
-                ", category=" + category +
-                ", deadline=" + deadline +
-                '}';
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public void setPriority(TaskPriority priority) {
+        this.priority = priority;
+    }
+
+    public void setTaskCategory(TaskCategory category) {
+        this.category = category;
+    }
+
+    public void setDeadline(LocalDate deadline) {
+        this.deadline = deadline;
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Task task)) return false;
-        return taskId != null && taskId.equals(task.taskId);
+        if (o == null || getClass() != o.getClass()) return false;
+        Task task = (Task) o;
+        return taskId == task.taskId;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(taskId);
+        return Objects.hashCode(taskId);
     }
 }
