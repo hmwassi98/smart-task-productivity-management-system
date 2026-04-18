@@ -1,5 +1,7 @@
 package com.stpms;
 
+import com.stpms.ui.ConsoleUI;
+
 public class Main {
 
     public static void main(String[] args) {
@@ -11,7 +13,8 @@ public class Main {
             System.out.println("STPMS application started successfully.");
             System.out.println("All repositories, services, and controllers have been initialized.");
 
-            // UI will be plugged in here later
+            ConsoleUI consoleUI = new ConsoleUI(app);
+            consoleUI.start();
 
         } catch (Exception e) {
             System.err.println("Failed to start application: " + e.getMessage());
