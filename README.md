@@ -197,9 +197,10 @@ This project is for academic and educational purposes and later may be expanded 
 ## Author
 
 **Azmine Fayeq Wassi**
-BSc in Computer Science
+BSc. in Computer Science
 Faculty of Informatics
 University of Debrecen
+Debrecen, Hungary
 
 ---
 
