@@ -136,7 +136,10 @@ public class TaskManagementView {
         deleteButton.setMaxWidth(Double.MAX_VALUE);
 
         createButton.setOnAction(e -> createTask());
-        refreshButton.setOnAction(e -> loadTasks());
+        refreshButton.setOnAction(e -> {
+            loadTasks();
+            showAlert(Alert.AlertType.INFORMATION, "Refreshed", "Tasks updated from database.");
+        });
         startButton.setOnAction(e -> startSelectedTask());
         completeButton.setOnAction(e -> completeSelectedTask());
         reopenButton.setOnAction(e -> reopenSelectedTask());
@@ -189,7 +192,11 @@ public class TaskManagementView {
     private void loadTasks() {
         try {
             List<Task> tasks = taskController.getAllTasks();
+
+            taskTable.getItems().clear();
             taskTable.setItems(FXCollections.observableArrayList(tasks));
+            taskTable.refresh();
+
         } catch (Exception ex) {
             showAlert(Alert.AlertType.ERROR, "Error", "Failed to load tasks: " + ex.getMessage());
         }
