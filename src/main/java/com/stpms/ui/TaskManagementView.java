@@ -198,7 +198,99 @@ public class TaskManagementView {
     }
 
     private Parent buildPomodoroTab() {
-        return null;
+        sessionTable = new TableView<>();
+
+        TableColumn<PomodoroSession, Long> idColumn = new TableColumn<>("ID");
+        idColumn.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleObjectProperty<>(cellData.getValue().getSessionId()));
+
+        TableColumn<PomodoroSession, Long> taskIdColumn = new TableColumn<>("Task ID");
+        taskIdColumn.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleObjectProperty<>(cellData.getValue().getTaskId()));
+
+        TableColumn<PomodoroSession, String> typeColumn = new TableColumn<>("Type");
+        typeColumn.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(cellData.getValue().getType().name()));
+
+        TableColumn<PomodoroSession, Integer> plannedColumn = new TableColumn<>("Planned Minutes");
+        plannedColumn.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleObjectProperty<>(cellData.getValue().getPlannedMinutes()));
+
+        TableColumn<PomodoroSession, String> startColumn = new TableColumn<>("Start Time");
+        startColumn.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(
+                        cellData.getValue().getStartTime() != null
+                                ? cellData.getValue().getStartTime().toString()
+                                : ""
+                ));
+
+        TableColumn<PomodoroSession, String> endColumn = new TableColumn<>("End Time");
+        endColumn.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(
+                        cellData.getValue().getEndTime() != null
+                                ? cellData.getValue().getEndTime().toString()
+                                : ""
+                ));
+
+        TableColumn<PomodoroSession, Boolean> completedColumn = new TableColumn<>("Completed");
+        completedColumn.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleObjectProperty<>(cellData.getValue().isCompleted()));
+
+        sessionTable.getColumns().addAll(
+                idColumn,
+                taskIdColumn,
+                typeColumn,
+                plannedColumn,
+                startColumn,
+                endColumn,
+                completedColumn
+        );
+
+        sessionTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
+
+        pomodoroTypeBox = new ComboBox<>();
+        pomodoroTypeBox.setItems(FXCollections.observableArrayList(PomodoroType.values()));
+        pomodoroTypeBox.setValue(PomodoroType.FOCUS);
+
+        plannedMinutesField = new TextField();
+        plannedMinutesField.setPromptText("Planned minutes");
+        plannedMinutesField.setText("25");
+
+        Button loadButton = new Button("Load Sessions for Selected Task");
+        Button startButton = new Button("Start New Session");
+        Button completeButton = new Button("Complete Selected Session");
+        Button deleteButton = new Button("Delete Selected Session");
+
+        loadButton.setMaxWidth(Double.MAX_VALUE);
+        startButton.setMaxWidth(Double.MAX_VALUE);
+        completeButton.setMaxWidth(Double.MAX_VALUE);
+        deleteButton.setMaxWidth(Double.MAX_VALUE);
+
+        loadButton.setOnAction(e -> loadSessionsForSelectedTask());
+        startButton.setOnAction(e -> startNewSessionForSelectedTask());
+        completeButton.setOnAction(e -> completeSelectedSession());
+        deleteButton.setOnAction(e -> deleteSelectedSession());
+
+        VBox controls = new VBox(10,
+                new Label("Pomodoro Sessions for Selected Task"),
+                new Label("Pomodoro Type"),
+                pomodoroTypeBox,
+                new Label("Planned Minutes"),
+                plannedMinutesField,
+                startButton,
+                loadButton,
+                completeButton,
+                deleteButton
+        );
+
+        controls.setPadding(new Insets(15));
+        controls.setPrefWidth(320);
+
+        BorderPane pane = new BorderPane();
+        pane.setCenter(sessionTable);
+        pane.setRight(controls);
+
+        return pane;
     }
 
     private VBox buildForm() {
@@ -462,6 +554,106 @@ public class TaskManagementView {
             loadSubtasksForSelectedTask();
         } catch (Exception ex) {
             showAlert(Alert.AlertType.ERROR, "Error", "Failed to delete subtask: " + ex.getMessage());
+        }
+    }
+
+    private void loadSessionsForSelectedTask() {
+        Task selectedTask = taskTable.getSelectionModel().getSelectedItem();
+
+        if (selectedTask == null) {
+            showAlert(Alert.AlertType.WARNING, "No Task Selected", "Please select a task from the Tasks tab first.");
+            return;
+        }
+
+        try {
+            List<PomodoroSession> sessions =
+                    pomodoroSessionController.getSessionsByTaskId(selectedTask.getTaskId());
+
+            sessionTable.setItems(FXCollections.observableArrayList(sessions));
+            sessionTable.refresh();
+
+        } catch (Exception ex) {
+            showAlert(Alert.AlertType.ERROR, "Error", "Failed to load pomodoro sessions: " + ex.getMessage());
+        }
+    }
+
+    private void startNewSessionForSelectedTask() {
+        Task selectedTask = taskTable.getSelectionModel().getSelectedItem();
+
+        if (selectedTask == null) {
+            showAlert(Alert.AlertType.WARNING, "No Task Selected", "Please select a task first.");
+            return;
+        }
+
+        try {
+            PomodoroType type = pomodoroTypeBox.getValue();
+            int plannedMinutes = Integer.parseInt(plannedMinutesField.getText().trim());
+
+            if (plannedMinutes <= 0) {
+                showAlert(Alert.AlertType.ERROR, "Validation Error", "Planned minutes must be greater than 0.");
+                return;
+            }
+
+            PomodoroSession session = pomodoroSessionController.createSession(
+                    selectedTask.getTaskId(),
+                    type,
+                    plannedMinutes
+            );
+
+            showAlert(Alert.AlertType.INFORMATION, "Success",
+                    "Pomodoro session started. Session ID: " + session.getSessionId());
+
+            loadSessionsForSelectedTask();
+
+        } catch (NumberFormatException ex) {
+            showAlert(Alert.AlertType.ERROR, "Validation Error", "Please enter a valid number for planned minutes.");
+        } catch (Exception ex) {
+            showAlert(Alert.AlertType.ERROR, "Error", "Failed to start pomodoro session: " + ex.getMessage());
+        }
+    }
+
+    private void completeSelectedSession() {
+        PomodoroSession selectedSession = sessionTable.getSelectionModel().getSelectedItem();
+
+        if (selectedSession == null) {
+            showAlert(Alert.AlertType.WARNING, "No Selection", "Please select a pomodoro session first.");
+            return;
+        }
+
+        try {
+            PomodoroSession completedSession =
+                    pomodoroSessionController.completeSession(selectedSession.getSessionId());
+
+            showAlert(Alert.AlertType.INFORMATION, "Success",
+                    "Session completed. Completed: " + completedSession.isCompleted());
+
+            loadSessionsForSelectedTask();
+
+        } catch (Exception ex) {
+            showAlert(Alert.AlertType.ERROR, "Error", "Failed to complete session: " + ex.getMessage());
+        }
+    }
+
+    private void deleteSelectedSession() {
+        PomodoroSession selectedSession = sessionTable.getSelectionModel().getSelectedItem();
+
+        if (selectedSession == null) {
+            showAlert(Alert.AlertType.WARNING, "No Selection", "Please select a pomodoro session first.");
+            return;
+        }
+
+        try {
+            boolean deleted = pomodoroSessionController.deleteSession(selectedSession.getSessionId());
+
+            if (deleted) {
+                showAlert(Alert.AlertType.INFORMATION, "Deleted", "Pomodoro session deleted successfully.");
+                loadSessionsForSelectedTask();
+            } else {
+                showAlert(Alert.AlertType.WARNING, "Not Found", "Pomodoro session was not found.");
+            }
+
+        } catch (Exception ex) {
+            showAlert(Alert.AlertType.ERROR, "Error", "Failed to delete session: " + ex.getMessage());
         }
     }
 
