@@ -31,7 +31,19 @@ public class Application {
     private final PomodoroSessionController pomodoroSessionController;
 
     public Application() throws SQLException {
-        this.connection = DatabaseConnection.getConnection();
+        Connection connection;
+
+        try {
+            connection = DatabaseConnection.getConnection();
+        } catch (RuntimeException e) {
+            if ("DATABASE_CONNECTION_FAILED".equals(e.getMessage())) {
+                System.err.println("ERROR: Could not connect to database.");
+                System.err.println("Make sure MySQL is running.");
+            }
+            throw e;
+        }
+
+        this.connection = connection;
 
         this.userRepository = new JdbcUserRepository(connection);
         this.taskRepository = new JdbcTaskRepository(connection);
