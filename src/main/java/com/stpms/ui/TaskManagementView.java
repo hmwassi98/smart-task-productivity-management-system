@@ -197,14 +197,19 @@ public class TaskManagementView {
 
     private void startSelectedTask() {
         Task selectedTask = taskTable.getSelectionModel().getSelectedItem();
+
         if (selectedTask == null) {
             showAlert(Alert.AlertType.WARNING, "No Selection", "Please select a task first.");
             return;
         }
 
         try {
-            taskController.startTask(selectedTask.getTaskId());
+            Task updatedTask = taskController.startTask(selectedTask.getTaskId());
             loadTasks();
+
+            showAlert(Alert.AlertType.INFORMATION, "Success",
+                    "Task started. New status: " + updatedTask.getStatus());
+
         } catch (Exception ex) {
             showAlert(Alert.AlertType.ERROR, "Error", "Failed to start task: " + ex.getMessage());
         }
@@ -212,14 +217,19 @@ public class TaskManagementView {
 
     private void completeSelectedTask() {
         Task selectedTask = taskTable.getSelectionModel().getSelectedItem();
+
         if (selectedTask == null) {
             showAlert(Alert.AlertType.WARNING, "No Selection", "Please select a task first.");
             return;
         }
 
         try {
-            taskController.completeTask(selectedTask.getTaskId());
+            Task updatedTask = taskController.completeTask(selectedTask.getTaskId());
             loadTasks();
+
+            showAlert(Alert.AlertType.INFORMATION, "Success",
+                    "Task completed. New status: " + updatedTask.getStatus());
+
         } catch (Exception ex) {
             showAlert(Alert.AlertType.ERROR, "Error", "Failed to complete task: " + ex.getMessage());
         }
@@ -227,14 +237,19 @@ public class TaskManagementView {
 
     private void reopenSelectedTask() {
         Task selectedTask = taskTable.getSelectionModel().getSelectedItem();
+
         if (selectedTask == null) {
             showAlert(Alert.AlertType.WARNING, "No Selection", "Please select a task first.");
             return;
         }
 
         try {
-            taskController.reopenTask(selectedTask.getTaskId());
+            Task updatedTask = taskController.reopenTask(selectedTask.getTaskId());
             loadTasks();
+
+            showAlert(Alert.AlertType.INFORMATION, "Success",
+                    "Task reopened. New status: " + updatedTask.getStatus());
+
         } catch (Exception ex) {
             showAlert(Alert.AlertType.ERROR, "Error", "Failed to reopen task: " + ex.getMessage());
         }
