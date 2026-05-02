@@ -2,9 +2,16 @@ package com.stpms.ui;
 
 import com.stpms.Application;
 import com.stpms.controller.TaskController;
+import com.stpms.controller.SubtaskController;
+import com.stpms.controller.PomodoroSessionController;
 import com.stpms.model.Task;
 import com.stpms.model.TaskCategory;
 import com.stpms.model.TaskPriority;
+import com.stpms.model.Subtask;
+import com.stpms.model.PomodoroSession;
+import com.stpms.model.PomodoroType;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.scene.Parent;
@@ -18,6 +25,8 @@ import java.util.List;
 public class TaskManagementView {
 
     private final TaskController taskController;
+    private final SubtaskController subtaskController;
+    private final PomodoroSessionController pomodoroSessionController;
 
     private final BorderPane root;
     private final TableView<Task> taskTable;
@@ -28,8 +37,17 @@ public class TaskManagementView {
     private final ComboBox<TaskCategory> categoryBox;
     private final DatePicker deadlinePicker;
 
+    private TableView<Subtask> subtaskTable;
+    private TextField subtaskNameField;
+
+    private TableView<PomodoroSession> sessionTable;
+    private ComboBox<PomodoroType> pomodoroTypeBox;
+    private TextField plannedMinutesField;
+
     public TaskManagementView(Application app) {
         this.taskController = app.getTaskController();
+        this.subtaskController = app.getSubtaskController();
+        this.pomodoroSessionController = app.getPomodoroSessionController();
 
         root = new BorderPane();
         taskTable = new TableView<>();
@@ -49,7 +67,7 @@ public class TaskManagementView {
     }
 
     private void buildUI() {
-        Label titleLabel = new Label("STPMS - Task Management");
+        Label titleLabel = new Label("STPMS - Smart Task & Productivity Management System");
         titleLabel.setFont(Font.font(22));
 
         VBox topBox = new VBox(titleLabel);
@@ -58,13 +76,29 @@ public class TaskManagementView {
 
         buildTable();
 
-        VBox formBox = buildForm();
+        VBox taskFormBox = buildForm();
 
-        SplitPane splitPane = new SplitPane();
-        splitPane.getItems().addAll(taskTable, formBox);
-        splitPane.setDividerPositions(0.6);
+        ScrollPane taskFormScrollPane = new ScrollPane(taskFormBox);
+        taskFormScrollPane.setFitToWidth(true);
 
-        root.setCenter(splitPane);
+        SplitPane taskSplitPane = new SplitPane();
+        taskSplitPane.getItems().addAll(taskTable, taskFormScrollPane);
+        taskSplitPane.setDividerPositions(0.6);
+
+        TabPane tabPane = new TabPane();
+
+        Tab taskTab = new Tab("Tasks", taskSplitPane);
+        taskTab.setClosable(false);
+
+        Tab subtaskTab = new Tab("Subtasks", buildSubtaskTab());
+        subtaskTab.setClosable(false);
+
+        Tab pomodoroTab = new Tab("Pomodoro", buildPomodoroTab());
+        pomodoroTab.setClosable(false);
+
+        tabPane.getTabs().addAll(taskTab, subtaskTab, pomodoroTab);
+
+        root.setCenter(tabPane);
     }
 
     private void buildTable() {
@@ -102,6 +136,69 @@ public class TaskManagementView {
 
         taskTable.getColumns().addAll(idColumn, nameColumn, statusColumn, priorityColumn, categoryColumn, deadlineColumn);
         taskTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
+    }
+
+    private Parent buildSubtaskTab() {
+        subtaskTable = new TableView<>();
+
+        TableColumn<Subtask, Long> idColumn = new TableColumn<>("ID");
+        idColumn.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleObjectProperty<>(cellData.getValue().getSubtaskId()));
+
+        TableColumn<Subtask, String> nameColumn = new TableColumn<>("Name");
+        nameColumn.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleStringProperty(cellData.getValue().getName()));
+
+        TableColumn<Subtask, Boolean> completedColumn = new TableColumn<>("Completed");
+        completedColumn.setCellValueFactory(cellData ->
+                new javafx.beans.property.SimpleObjectProperty<>(cellData.getValue().isCompleted()));
+
+        subtaskTable.getColumns().addAll(idColumn, nameColumn, completedColumn);
+        subtaskTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
+
+        subtaskNameField = new TextField();
+        subtaskNameField.setPromptText("Subtask name");
+
+        Button loadButton = new Button("Load Subtasks for Selected Task");
+        Button addButton = new Button("Add Subtask");
+        Button completeButton = new Button("Complete Selected Subtask");
+        Button reopenButton = new Button("Reopen Selected Subtask");
+        Button deleteButton = new Button("Delete Selected Subtask");
+
+        loadButton.setMaxWidth(Double.MAX_VALUE);
+        addButton.setMaxWidth(Double.MAX_VALUE);
+        completeButton.setMaxWidth(Double.MAX_VALUE);
+        reopenButton.setMaxWidth(Double.MAX_VALUE);
+        deleteButton.setMaxWidth(Double.MAX_VALUE);
+
+        loadButton.setOnAction(e -> loadSubtasksForSelectedTask());
+        addButton.setOnAction(e -> addSubtaskToSelectedTask());
+        completeButton.setOnAction(e -> completeSelectedSubtask());
+        reopenButton.setOnAction(e -> reopenSelectedSubtask());
+        deleteButton.setOnAction(e -> deleteSelectedSubtask());
+
+        VBox controls = new VBox(10,
+                new Label("Subtasks for Selected Task"),
+                subtaskNameField,
+                addButton,
+                loadButton,
+                completeButton,
+                reopenButton,
+                deleteButton
+        );
+
+        controls.setPadding(new Insets(15));
+        controls.setPrefWidth(300);
+
+        BorderPane pane = new BorderPane();
+        pane.setCenter(subtaskTable);
+        pane.setRight(controls);
+
+        return pane;
+    }
+
+    private Parent buildPomodoroTab() {
+        return null;
     }
 
     private VBox buildForm() {
@@ -276,6 +373,95 @@ public class TaskManagementView {
             }
         } catch (Exception ex) {
             showAlert(Alert.AlertType.ERROR, "Error", "Failed to delete task: " + ex.getMessage());
+        }
+    }
+
+    private void loadSubtasksForSelectedTask() {
+        Task selectedTask = taskTable.getSelectionModel().getSelectedItem();
+
+        if (selectedTask == null) {
+            showAlert(Alert.AlertType.WARNING, "No Task Selected", "Please select a task from the Tasks tab first.");
+            return;
+        }
+
+        try {
+            List<Subtask> subtasks = subtaskController.getSubtasksByTaskId(selectedTask.getTaskId());
+            subtaskTable.setItems(FXCollections.observableArrayList(subtasks));
+            subtaskTable.refresh();
+        } catch (Exception ex) {
+            showAlert(Alert.AlertType.ERROR, "Error", "Failed to load subtasks: " + ex.getMessage());
+        }
+    }
+
+    private void addSubtaskToSelectedTask() {
+        Task selectedTask = taskTable.getSelectionModel().getSelectedItem();
+
+        if (selectedTask == null) {
+            showAlert(Alert.AlertType.WARNING, "No Task Selected", "Please select a task first.");
+            return;
+        }
+
+        String name = subtaskNameField.getText().trim();
+
+        if (name.isBlank()) {
+            showAlert(Alert.AlertType.ERROR, "Validation Error", "Subtask name cannot be empty.");
+            return;
+        }
+
+        try {
+            subtaskController.createSubtask(selectedTask.getTaskId(), name);
+            subtaskNameField.clear();
+            loadSubtasksForSelectedTask();
+        } catch (Exception ex) {
+            showAlert(Alert.AlertType.ERROR, "Error", "Failed to add subtask: " + ex.getMessage());
+        }
+    }
+
+    private void completeSelectedSubtask() {
+        Subtask selectedSubtask = subtaskTable.getSelectionModel().getSelectedItem();
+
+        if (selectedSubtask == null) {
+            showAlert(Alert.AlertType.WARNING, "No Selection", "Please select a subtask first.");
+            return;
+        }
+
+        try {
+            subtaskController.completeSubtask(selectedSubtask.getSubtaskId());
+            loadSubtasksForSelectedTask();
+        } catch (Exception ex) {
+            showAlert(Alert.AlertType.ERROR, "Error", "Failed to complete subtask: " + ex.getMessage());
+        }
+    }
+
+    private void reopenSelectedSubtask() {
+        Subtask selectedSubtask = subtaskTable.getSelectionModel().getSelectedItem();
+
+        if (selectedSubtask == null) {
+            showAlert(Alert.AlertType.WARNING, "No Selection", "Please select a subtask first.");
+            return;
+        }
+
+        try {
+            subtaskController.reopenSubtask(selectedSubtask.getSubtaskId());
+            loadSubtasksForSelectedTask();
+        } catch (Exception ex) {
+            showAlert(Alert.AlertType.ERROR, "Error", "Failed to reopen subtask: " + ex.getMessage());
+        }
+    }
+
+    private void deleteSelectedSubtask() {
+        Subtask selectedSubtask = subtaskTable.getSelectionModel().getSelectedItem();
+
+        if (selectedSubtask == null) {
+            showAlert(Alert.AlertType.WARNING, "No Selection", "Please select a subtask first.");
+            return;
+        }
+
+        try {
+            subtaskController.deleteSubtask(selectedSubtask.getSubtaskId());
+            loadSubtasksForSelectedTask();
+        } catch (Exception ex) {
+            showAlert(Alert.AlertType.ERROR, "Error", "Failed to delete subtask: " + ex.getMessage());
         }
     }
 
